@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <title>Registro de Emoções</title>
+  <style>
+    #emotions-chart,
+    #emotions-history {
+      width: 80%;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="container">
+    <h1 class="text-center">Registro de Emoções por Dia</h1>
+    <h4 class="text-center">Monitore suas emoções durante o dia </h4>
+    
+    <div class="row">
+      <div class="col-md-6 offset-md-3 mb-5">
+        <div class="form-group mb-3">
+          <label for="emotion">Selecione uma emoção:</label>
+          <select class="form-control" v-model="selectedEmotion">
+            <option v-for="emotion in emotions" :key="emotion">{{ emotion }}</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" @click="addEmotion">Adicionar Emoção</button>
+        <button class="btn btn-outline-danger" @click="clearCache">Limpar Dados</button>
+      </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div id="emotions-chart"></div>
+        </div>
+    </div>
+
+    <div class="row">        
+      <div class="col-md-8 offset-md-2">
+        <h3 class="text-center">Histórico de Emoções do Dia</h3>
+        <table class="table" id="emotions-history">
+          <thead>
+            <tr>
+              <th scope="col">Emoção</th>
+              <th scope="col">Quantidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(count, emotion) in emotionData" :key="emotion">
+              <td>{{ emotion }}</td>
+              <td>{{ count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.26.1/dist/apexcharts.min.js"></script>
+
+<script>
+new Vue({
+  el: '#app',
+  data: {
+    emotions: ['Feliz', 'Triste', 'Surpreso', 'Irritado'],
+    selectedEmotion: '',
+    emotionData: {},
+  },
+  mounted() {
+    this.loadEmotionData();
+    this.renderChart();
+  },
+  methods: {
+    addEmotion() {
+      if (!this.emotionData[this.selectedEmotion]) {
+        this.$set(this.emotionData, this.selectedEmotion, 1);
+      } else {
+        this.emotionData[this.selectedEmotion]++;
+      }
+      this.saveEmotionData();
+      this.renderChart();
+    },
+    loadEmotionData() {
+      const cachedData = localStorage.getItem('emotionData');
+      if (cachedData) {
+        const { data, timestamp } = JSON.parse(cachedData);
+        const now = new Date().getTime();
+        if (now - timestamp < 24 * 60 * 60 * 1000) {
+          this.emotionData = data;
+        }
+      }
+    },
+    saveEmotionData() {
+      const dataToSave = {
+        data: this.emotionData,
+        timestamp: new Date().getTime(),
+      };
+      localStorage.setItem('emotionData', JSON.stringify(dataToSave));
+    },
+    clearCache() {
+      localStorage.removeItem('emotionData');
+      this.emotionData = {};
+      this.renderChart();
+    },
+    renderChart() {
+      const emotionsChart = new ApexCharts(document.getElementById('emotions-chart'), {
+        chart: {
+          type: 'bar',
+          height: 350,
+        },
+        series: [{
+          name: 'Emoções',
+          data: Object.values(this.emotionData),
+        }],
+        xaxis: {
+          categories: Object.keys(this.emotionData),
+        },
+      });
+      emotionsChart.render();
+    },
+  },
+});
+</script>
+
+</body>
+</html>
